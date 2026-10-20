@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# ---- 點歌機專案 ----
+# webpack 打包輸出
+public/
+.vscode
+# 票券碼匯出檔（可直接登入，絕不進版控）
+*.csv

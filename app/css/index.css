@@ -1,0 +1,148 @@
+/* 票券登入 */
+.login-page {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 16px;
+}
+
+.login-card {
+    display: grid;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+}
+
+.login-title {
+    margin: 0;
+    font-size: 1.6rem;
+    text-align: center;
+}
+
+.login-hint {
+    margin: 0;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.ticket-input {
+    font-size: 1.2rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* 主畫面 */
+.room-status {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 2px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--success);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+}
+
+.room-status.is-closed {
+    color: var(--danger);
+}
+
+.ticket-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ticket-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.song-list {
+    margin: 12px 0;
+    padding: 0;
+    list-style: none;
+    max-height: 55vh;
+    overflow-y: auto;
+}
+
+.song-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.song-item:hover {
+    background: var(--bg);
+}
+
+.song-item.is-selected {
+    border-color: var(--primary);
+}
+
+.song-title {
+    font-weight: 600;
+}
+
+.song-meta {
+    grid-column: 1;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.song-votes {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.vote-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.selected-song {
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.voted-song {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.voted-box {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+}
+
+.voted-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.song-item.is-voted .song-title {
+    color: var(--primary);
+}

@@ -1,0 +1,48 @@
+{
+    "name": "song-request-jukebox",
+    "version": "1.0.0",
+    "description": "shiliya 點歌機",
+    "main": "index.js",
+    "scripts": {
+        "dev:server": "nodemon index.js",
+        "dev:client": "webpack serve --mode development",
+        "dev-web": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+        "clean": "rimraf public",
+        "build": "webpack",
+        "watch": "webpack --watch --mode development",
+        "start": "npm run build && node index.js",
+        "start:prod": "node index.js",
+        "migrate": "node server/migration/migrate.js up",
+        "migrate:down": "node server/migration/migrate.js down",
+        "migrate:status": "node server/migration/migrate.js status",
+        "migrate:pending": "node server/migration/migrate.js pending",
+        "seed": "node server/lib/script/seed-demo.js",
+        "tickets:import": "node server/lib/script/import-tickets.js",
+        "format": "prettier --write ."
+    },
+    "author": "shiliyahamster",
+    "license": "ISC",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.21.2",
+        "express-rate-limit": "^8.3.0",
+        "pg": "^8.15.6",
+        "pg-hstore": "^2.3.4",
+        "sequelize": "^6.37.7",
+        "umzug": "^3.8.3"
+    },
+    "devDependencies": {
+        "clean-webpack-plugin": "^4.0.0",
+        "concurrently": "^9.0.0",
+        "css-loader": "^7.1.2",
+        "html-webpack-plugin": "^5.6.3",
+        "mini-css-extract-plugin": "^2.9.2",
+        "nodemon": "^3.1.4",
+        "prettier": "^3.5.3",
+        "rimraf": "^5.0.5",
+        "webpack": "^5.94.0",
+        "webpack-cli": "^5.1.4",
+        "webpack-dev-server": "^5.1.0"
+    }
+}
