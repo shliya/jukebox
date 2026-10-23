@@ -2,97 +2,244 @@
 <html lang="zh-TW">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>點歌機</title>
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#9ed6ec" />
+        <title>牛碧歌舞廳伴唱機</title>
     </head>
     <body>
+        <svg width="0" height="0" class="sprite" aria-hidden="true">
+            <symbol id="i-skip" viewBox="0 0 24 24">
+                <polygon points="5 4 15 12 5 20 5 4" />
+                <line x1="19" x2="19" y1="5" y2="19" />
+            </symbol>
+            <symbol id="i-list" viewBox="0 0 24 24">
+                <path d="M21 15V6" />
+                <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                <path d="M12 12H3" />
+                <path d="M16 6H3" />
+                <path d="M12 18H3" />
+            </symbol>
+            <symbol id="i-bell" viewBox="0 0 24 24">
+                <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                <path d="M22 8c0-2.3-.8-4.3-2-6" />
+                <path
+                    d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+                />
+                <path d="M4 2C2.8 3.7 2 5.7 2 8" />
+            </symbol>
+            <symbol id="i-prev" viewBox="0 0 24 24">
+                <path d="m15 18-6-6 6-6" />
+            </symbol>
+            <symbol id="i-next" viewBox="0 0 24 24">
+                <path d="m9 18 6-6-6-6" />
+            </symbol>
+            <symbol id="i-close" viewBox="0 0 24 24">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+            </symbol>
+            <symbol id="i-phone" viewBox="0 0 24 24">
+                <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                <path d="M12 18h.01" />
+            </symbol>
+        </svg>
+
+        <!-- 直向時蓋住畫面（只在 orientation: portrait 顯示） -->
+        <div class="rotate-hint" role="alert">
+            <svg class="icon rotate-hint__icon" aria-hidden="true">
+                <use href="#i-phone" />
+            </svg>
+            <p class="rotate-hint__title">請將手機轉成橫向</p>
+            <p class="rotate-hint__text">牛碧歌舞廳伴唱機只支援橫向畫面</p>
+        </div>
+
         <!-- 票券登入 -->
-        <main id="loginView" class="login-page" hidden>
-            <form id="loginForm" class="card login-card">
-                <h1 class="login-title">點歌機</h1>
-                <p class="login-hint">輸入票券上的票券碼開始點歌</p>
-                <label class="field">
-                    <span class="label">票券碼</span>
-                    <input
-                        id="ticketCode"
-                        class="input ticket-input"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        maxlength="64"
-                        placeholder="XXXXX-XXXXX"
-                        required
-                    />
-                </label>
-                <button id="loginBtn" class="btn btn-primary" type="submit">
-                    登入
+        <main id="loginView" class="ktv-frame ktv-login" hidden>
+            <h1 class="ktv-title">牛碧歌舞廳伴唱機</h1>
+            <form id="loginForm" class="login-card" novalidate>
+                <label class="login-label" for="ticketCode">請輸入票券碼</label>
+                <input
+                    id="ticketCode"
+                    class="login-input"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    maxlength="64"
+                    placeholder="XXXXX-XXXXX"
+                    aria-describedby="loginMessage"
+                    required
+                />
+                <button
+                    id="loginBtn"
+                    class="ktv-btn ktv-btn--wide"
+                    type="submit"
+                >
+                    開始點歌
                 </button>
-                <p id="loginMessage" class="form-message" role="alert"></p>
+                <p id="loginMessage" class="login-message" role="alert"></p>
             </form>
         </main>
 
-        <!-- 登入後 -->
-        <main id="mainView" class="page" hidden>
-            <header class="room-header">
-                <div>
-                    <h1 id="roomName" class="room-name"></h1>
-                    <span id="roomStatus" class="room-status"></span>
-                </div>
-                <div class="ticket-box">
-                    <span id="ticketLabel" class="ticket-label"></span>
-                    <button id="logoutBtn" class="btn" type="button">
-                        登出
+        <!-- 伴唱機主畫面 -->
+        <div id="mainView" class="ktv-frame ktv-app" hidden>
+            <header class="ktv-header">
+                <h1 class="ktv-title">
+                    <button
+                        id="homeBtn"
+                        class="ktv-title-btn"
+                        type="button"
+                        title="回到全部歌曲"
+                    >
+                        牛碧歌舞廳伴唱機
                     </button>
-                </div>
+                </h1>
+                <nav class="ktv-tabs" aria-label="歌單分類">
+                    <button
+                        class="ktv-btn ktv-tab"
+                        type="button"
+                        data-tag="蘆棠布奈"
+                        aria-pressed="false"
+                    >
+                        蘆棠布奈歌單
+                    </button>
+                    <button
+                        class="ktv-btn ktv-tab"
+                        type="button"
+                        data-tag="小金碧碧"
+                        aria-pressed="false"
+                    >
+                        小金碧碧歌單
+                    </button>
+                    <button
+                        class="ktv-btn ktv-tab"
+                        type="button"
+                        data-tag="合唱"
+                        aria-pressed="false"
+                    >
+                        合唱歌單
+                    </button>
+                </nav>
             </header>
 
-            <div class="layout">
-                <section class="card">
-                    <div id="votedSection" class="voted-box" hidden>
-                        <span class="label">你目前點的歌</span>
-                        <p id="votedSong" class="voted-song"></p>
-                        <p class="voted-hint">
-                            一張票只算一首，想換歌直接從下面改選
-                        </p>
-                    </div>
+            <p id="roomNotice" class="ktv-notice" hidden>目前暫停點歌</p>
 
-                    <div>
-                        <h2 id="voteTitle" class="card-title">選一首歌</h2>
-                        <input
-                            id="searchInput"
-                            class="input"
-                            type="search"
-                            placeholder="搜尋歌名或歌手"
-                            maxlength="50"
-                            aria-label="搜尋歌曲"
-                        />
-                        <ul id="songList" class="song-list"></ul>
-                        <div class="vote-bar">
-                            <span id="selectedSong" class="selected-song"
-                                >尚未選擇</span
-                            >
-                            <button
-                                id="voteBtn"
-                                class="btn btn-primary"
-                                type="button"
-                                disabled
-                            >
-                                點這首
-                            </button>
-                        </div>
-                        <p
-                            id="voteMessage"
-                            class="form-message"
-                            role="alert"
-                        ></p>
-                    </div>
-                </section>
+            <main class="ktv-body">
+                <h2 id="listHeading" class="visually-hidden">全部歌曲</h2>
+                <ol
+                    id="songList"
+                    class="ktv-list"
+                    aria-labelledby="listHeading"
+                    aria-busy="true"
+                ></ol>
+            </main>
 
-                <section class="card">
-                    <h2 class="card-title">點歌排行榜</h2>
-                    <ol id="rankingList" class="rank-list"></ol>
-                </section>
+            <footer class="ktv-footer">
+                <div class="ktv-actions">
+                    <button
+                        id="cutBtn"
+                        class="ktv-btn ktv-action"
+                        type="button"
+                    >
+                        <svg class="icon" aria-hidden="true">
+                            <use href="#i-skip" />
+                        </svg>
+                        切歌
+                    </button>
+                    <button
+                        id="queueBtn"
+                        class="ktv-btn ktv-action"
+                        type="button"
+                        aria-haspopup="dialog"
+                    >
+                        <svg class="icon" aria-hidden="true">
+                            <use href="#i-list" />
+                        </svg>
+                        已點歌曲
+                    </button>
+                    <button
+                        id="bellBtn"
+                        class="ktv-btn ktv-action"
+                        type="button"
+                    >
+                        <svg class="icon" aria-hidden="true">
+                            <use href="#i-bell" />
+                        </svg>
+                        服務鈴
+                    </button>
+                </div>
+                <div class="ktv-pager">
+                    <p id="pageLabel" class="ktv-page" aria-live="polite">
+                        第01/01頁
+                    </p>
+                    <button
+                        id="prevBtn"
+                        class="ktv-btn ktv-page-btn"
+                        type="button"
+                    >
+                        <svg class="icon icon--sm" aria-hidden="true">
+                            <use href="#i-prev" />
+                        </svg>
+                        上一頁
+                    </button>
+                    <button
+                        id="nextBtn"
+                        class="ktv-btn ktv-page-btn"
+                        type="button"
+                    >
+                        下一頁
+                        <svg class="icon icon--sm" aria-hidden="true">
+                            <use href="#i-next" />
+                        </svg>
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+        <!-- 已點歌曲 -->
+        <dialog
+            id="queueDialog"
+            class="ktv-dialog"
+            aria-labelledby="queueTitle"
+        >
+            <div class="dialog-head">
+                <h2 id="queueTitle" class="dialog-title">已點歌曲</h2>
+                <button
+                    id="closeDialogBtn"
+                    class="dialog-close"
+                    type="button"
+                    aria-label="關閉"
+                >
+                    <svg class="icon" aria-hidden="true">
+                        <use href="#i-close" />
+                    </svg>
+                </button>
             </div>
-        </main>
+            <section class="dialog-section" aria-labelledby="myVoteTitle">
+                <h3 id="myVoteTitle" class="dialog-subtitle">你點的歌</h3>
+                <p id="myVote" class="my-vote"></p>
+                <p class="dialog-hint">
+                    一張票只算一首，想換歌直接在歌單按「點歌」
+                </p>
+            </section>
+            <section class="dialog-section" aria-labelledby="rankTitle">
+                <h3 id="rankTitle" class="dialog-subtitle">點歌排行</h3>
+                <ol id="rankingList" class="rank-list"></ol>
+            </section>
+            <div class="dialog-foot">
+                <span id="ticketLabel" class="ticket-label"></span>
+                <button id="logoutBtn" class="dialog-logout" type="button">
+                    登出
+                </button>
+            </div>
+        </dialog>
+
+        <div
+            id="toast"
+            class="ktv-toast"
+            role="status"
+            aria-live="polite"
+        ></div>
     </body>
 </html>

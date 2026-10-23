@@ -1,0 +1,30 @@
+# 本機開發用 PostgreSQL（只開給本機 127.0.0.1）
+#   啟動：docker compose up -d
+#   停止：docker compose stop
+#   連線：postgres://postgres:postgres@localhost:5433/jukebox_dev
+# 用 5433 是為了不跟其他專案佔用 5432 的資料庫衝突
+# 資料夾名稱是中文，compose 推不出專案名，所以明確指定
+name: jukebox
+
+services:
+    db:
+        image: postgres:17
+        container_name: jukebox-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: jukebox_dev
+            TZ: Asia/Taipei
+        ports:
+            - '127.0.0.1:5433:5432'
+        volumes:
+            - jukebox-pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d jukebox_dev']
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+volumes:
+    jukebox-pgdata:

@@ -49,31 +49,9 @@ async function bulkInsertTicketCodes(roomId, codes) {
     return inserted;
 }
 
-/** 票券使用統計：總數 / 登入過 / 已點歌 */
-async function getTicketStatsByRoomId(roomId) {
-    const [stats] = await sequelize.query(
-        `
-        SELECT
-            COUNT(t.id)::int               AS total,
-            COUNT(t.last_login_at)::int    AS logged_in,
-            COUNT(v.id)::int               AS voted
-        FROM tickets t
-        LEFT JOIN song_votes v ON v.ticket_id = t.id
-        WHERE t.room_id = :roomId
-        `,
-        { replacements: { roomId }, type: QueryTypes.SELECT }
-    );
-    return {
-        total: stats.total,
-        loggedIn: stats.logged_in,
-        voted: stats.voted,
-    };
-}
-
 module.exports = {
     getTicketByCode,
     getTicketById,
     touchLastLogin,
     bulkInsertTicketCodes,
-    getTicketStatsByRoomId,
 };

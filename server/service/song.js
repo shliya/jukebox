@@ -1,8 +1,7 @@
 const SongStore = require('../store/song');
 const SongVoteStore = require('../store/song-vote');
 const RoomStore = require('../store/room');
-const TicketStore = require('../store/ticket');
-const { ENUM_ROOM_STATUS, ENUM_SONG_SOURCE } = require('../lib/enum');
+const { ENUM_ROOM_STATUS } = require('../lib/enum');
 const {
     AppError,
     ROOM_NOT_FOUND,
@@ -10,20 +9,38 @@ const {
     SONG_NOT_FOUND,
 } = require('../lib/error/code');
 
-async function getRoomBySlugOrThrow(slug) {
-    const room = await RoomStore.getRoomBySlug(slug);
-    if (!room) {
-        throw new AppError(ROOM_NOT_FOUND);
+/**
+ * 觀眾：歌單分頁，可依分類（tag）篩選、搜尋
+ * 頁碼超出範圍時自動拉回最後一頁
+ */
+async function getSongList(ticket, { tag, keyword, page = 1, pageSize = 20 }) {
+    let current = page;
+    let result = await SongStore.getSongPageByRoomId(ticket.roomId, {
+        tag,
+        keyword,
+        page: current,
+        pageSize,
+    });
+    const totalPages = Math.max(1, Math.ceil(result.total / pageSize));
+    if (current > totalPages) {
+        current = totalPages;
+        result = await SongStore.getSongPageByRoomId(ticket.roomId, {
+            tag,
+            keyword,
+            page: current,
+            pageSize,
+        });
     }
-    return room;
+    return {
+        items: result.items,
+        total: result.total,
+        page: current,
+        pageSize,
+        totalPages,
+    };
 }
 
-/** 觀眾：歌單（含票數，依票數排序，可搜尋） */
-async function getSongList(ticket, { keyword } = {}) {
-    return SongStore.getSongRankingByRoomId(ticket.roomId, { keyword });
-}
-
-/** 觀眾 / 管理：排行榜（只列有票的歌） */
+/** 觀眾：排行榜（只列有票的歌） */
 async function getRankingByRoomId(roomId, { limit } = {}) {
     return SongStore.getSongRankingByRoomId(roomId, {
         onlyVoted: true,
@@ -64,37 +81,8 @@ async function voteSong(ticket, songId) {
     return { ...result, previousSongId, changed: true };
 }
 
-/** 管理：新增歌曲 */
-async function createSong(slug, { title, artist, durationSec, tags }) {
-    const room = await getRoomBySlugOrThrow(slug);
-    return SongStore.createSong({
-        roomId: room.id,
-        title,
-        artist: artist || null,
-        source: ENUM_SONG_SOURCE.MANUAL,
-        durationSec: durationSec ?? null,
-        tags: tags || [],
-    });
-}
-
-/** 管理：排行榜 + 票券使用統計 */
-async function getAdminOverview(slug) {
-    const room = await getRoomBySlugOrThrow(slug);
-    const [ranking, ticketStats] = await Promise.all([
-        getRankingByRoomId(room.id),
-        TicketStore.getTicketStatsByRoomId(room.id),
-    ]);
-    return {
-        room: { slug: room.slug, name: room.name },
-        ticketStats,
-        ranking,
-    };
-}
-
 module.exports = {
     getSongList,
     getRankingByRoomId,
     voteSong,
-    createSong,
-    getAdminOverview,
 };

@@ -59,6 +59,62 @@ async function getSongRankingByRoomId(
     }));
 }
 
+/**
+ * 歌單分頁（伴唱機畫面用）：依編號排序，翻頁時順序固定不跳動
+ * @param {number|string} roomId
+ * @param {{ tag?: string, keyword?: string, page: number, pageSize: number }} options
+ *   tag 有值時只列 tags 含該分類的歌（例如「合唱」）
+ * @returns {Promise<{ items: Array, total: number }>}
+ */
+async function getSongPageByRoomId(
+    roomId,
+    { tag = '', keyword = '', page, pageSize }
+) {
+    const where = `
+        WHERE s.room_id = :roomId
+          AND s.is_active = TRUE
+          AND (:tag = '' OR s.tags @> jsonb_build_array(CAST(:tag AS text)))
+          AND (
+                :keyword = ''
+                OR s.title  ILIKE :like
+                OR s.artist ILIKE :like
+              )
+    `;
+    const replacements = {
+        roomId,
+        tag,
+        keyword,
+        like: `%${keyword.replace(/[\\%_]/g, '\\$&')}%`,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+    };
+
+    const [{ total }] = await sequelize.query(
+        `SELECT COUNT(*)::int AS total FROM songs s ${where}`,
+        { replacements, type: QueryTypes.SELECT }
+    );
+    const rows = await sequelize.query(
+        `
+        SELECT s.id, s.title, s.artist, s.duration_sec, s.tags
+        FROM songs s
+        ${where}
+        ORDER BY s.id ASC
+        LIMIT :limit OFFSET :offset
+        `,
+        { replacements, type: QueryTypes.SELECT }
+    );
+    return {
+        total,
+        items: rows.map(row => ({
+            id: Number(row.id),
+            title: row.title,
+            artist: row.artist,
+            durationSec: row.duration_sec,
+            tags: row.tags,
+        })),
+    };
+}
+
 async function getActiveSongByIdAndRoomId(id, roomId, { transaction } = {}) {
     return Song.findOne({
         where: { id, roomId, isActive: true },
@@ -66,12 +122,8 @@ async function getActiveSongByIdAndRoomId(id, roomId, { transaction } = {}) {
     });
 }
 
-async function createSong(row, { transaction } = {}) {
-    return Song.create(row, { transaction });
-}
-
 module.exports = {
     getSongRankingByRoomId,
+    getSongPageByRoomId,
     getActiveSongByIdAndRoomId,
-    createSong,
 };

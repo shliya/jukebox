@@ -4,6 +4,7 @@
     "description": "shiliya 點歌機",
     "main": "index.js",
     "scripts": {
+        "dev:local": "node scripts/dev-local.js",
         "dev:server": "nodemon index.js",
         "dev:client": "webpack serve --mode development",
         "dev-web": "concurrently \"npm run dev:server\" \"npm run dev:client\"",

@@ -1,148 +1,756 @@
-/* 票券登入 */
-.login-page {
+/*
+ * 牛碧歌舞廳伴唱機：KTV 點歌機風格，只做橫向版面
+ * - 直向（手機直拿）時整個畫面蓋上「請轉成橫向」提示
+ * - 字級、按鈕用 vh 跟著螢幕高度縮放：手機橫放（約 360px 高）到大螢幕都同一套版面
+ * - 每欄幾首由 JS 依高度決定（--rows），列高不會小於 36px
+ * 文字色已依 WCAG 對比調深（歌名 / 歌手 / 標題），色相維持設計稿
+ */
+:root {
+    color-scheme: light;
+
+    --frame: #9ed6ec;
+    --frame-edge: #5fb3d6;
+    --frame-line: #ffffff;
+
+    --pink-hi: #ff8cc2;
+    --pink: #e62a80;
+    --pink-lo: #c8136a;
+    --pink-shadow: #9c0b51;
+    --title: #a80f58;
+
+    --row-blue-hi: #e3f5fd;
+    --row-blue-lo: #8fd0ec;
+    --row-yellow-hi: #fffbe3;
+    --row-yellow-lo: #ffe57a;
+    --song: #b0380a;
+    --song-no: #c2410c;
+    --artist: #96104a;
+
+    --green-hi: #d4f7c5;
+    --green-lo: #6fcf5b;
+    --green-edge: #3c9e3c;
+    --green-text: #0b4d17;
+
+    --focus: #102a6b;
+    --radius: 6px;
+
+    /* 依螢幕高度縮放的尺寸 */
+    --space: clamp(4px, 1vh, 8px);
+    --btn-h: clamp(32px, 7.4vh, 72px);
+    --footer-h: clamp(36px, 8.4vh, 84px);
+    --row-gap: 3px;
+
+    /* 微軟正黑體；手機沒有內建時改用系統的繁中黑體（iOS 蘋方、Android 思源黑體） */
+    font-family:
+        'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Noto Sans TC',
+        system-ui, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    background: var(--frame);
+    color: var(--song);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+.sprite {
+    position: absolute;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.icon {
+    width: 1.2em;
+    height: 1.2em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon--sm {
+    width: 1em;
+    height: 1em;
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+/* ---------- 外框 ---------- */
+
+.ktv-frame {
+    min-height: 100dvh;
+    padding: max(var(--space), env(safe-area-inset-top))
+        max(var(--space), env(safe-area-inset-right))
+        max(var(--space), env(safe-area-inset-bottom))
+        max(var(--space), env(safe-area-inset-left));
+    border: 3px solid var(--frame-edge);
+    box-shadow: inset 0 0 0 2px var(--frame-line);
+}
+
+.ktv-title {
+    margin: 0;
+    font-size: clamp(1.15rem, 5.2vh, 3.2rem);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+    color: var(--title);
+    text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+}
+
+.ktv-title-btn {
+    padding: 2px 6px;
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+/* ---------- 粉紅按鈕 ---------- */
+
+.ktv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
+    min-height: var(--btn-h);
+    padding: 2px clamp(6px, 1.6vh, 14px);
+    font: inherit;
+    font-size: clamp(0.9rem, 3.4vh, 2rem);
+    letter-spacing: 0.04em;
+    color: #fff;
+    white-space: nowrap;
+    text-shadow: 0 1px 1px rgba(120, 0, 50, 0.45);
+    background: linear-gradient(
+        180deg,
+        var(--pink-hi) 0%,
+        var(--pink) 48%,
+        var(--pink-lo) 100%
+    );
+    border: 1px solid var(--pink-shadow);
+    border-radius: var(--radius);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 2px 0 var(--pink-shadow);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+        transform 120ms ease-out,
+        box-shadow 120ms ease-out,
+        filter 150ms ease-out;
+}
+
+.ktv-btn:hover {
+    filter: brightness(1.06);
+}
+
+.ktv-btn:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.ktv-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.55) opacity(0.6);
+    transform: none;
+}
+
+.ktv-btn--wide {
+    width: 100%;
+}
+
+/* 目前選中的歌單：反白 */
+.ktv-tab[aria-pressed='true'] {
+    color: var(--pink-lo);
+    text-shadow: none;
+    background: linear-gradient(180deg, #ffffff 0%, #ffe3f0 100%);
+    border-color: var(--pink-lo);
+    box-shadow:
+        inset 0 0 0 2px var(--pink),
+        0 2px 0 var(--pink-shadow);
+}
+
+/* ---------- 登入 ---------- */
+
+.ktv-login {
     display: grid;
-    place-items: center;
-    min-height: 100vh;
-    padding: 16px;
+    place-content: center;
+    justify-items: center;
+    gap: clamp(10px, 3vh, 24px);
+    text-align: center;
 }
 
 .login-card {
     display: grid;
-    gap: 14px;
+    gap: clamp(8px, 2vh, 14px);
+    width: min(400px, 80vw);
+    padding: clamp(12px, 3.5vh, 24px) 20px;
+    background: linear-gradient(180deg, var(--row-yellow-hi), #fff3b8);
+    border: 2px solid var(--frame-line);
+    border-radius: 10px;
+    box-shadow: 0 3px 0 var(--frame-edge);
+}
+
+.login-label {
+    font-size: clamp(1rem, 3vh, 1.25rem);
+    color: var(--song);
+}
+
+.login-input {
     width: 100%;
-    max-width: 380px;
-}
-
-.login-title {
-    margin: 0;
-    font-size: 1.6rem;
-    text-align: center;
-}
-
-.login-hint {
-    margin: 0;
-    color: var(--text-muted);
-    text-align: center;
-}
-
-.ticket-input {
-    font-size: 1.2rem;
-    letter-spacing: 0.08em;
+    min-height: clamp(40px, 8vh, 56px);
+    padding: 4px 12px;
+    font: inherit;
+    /* 16px 以上，iOS 點輸入框才不會自動放大畫面 */
+    font-size: clamp(1rem, 3.8vh, 1.5rem);
+    letter-spacing: 0.1em;
     text-align: center;
     text-transform: uppercase;
+    color: #3b1a0a;
+    background: #fff;
+    border: 2px solid var(--frame-edge);
+    border-radius: var(--radius);
 }
 
-/* 主畫面 */
-.room-status {
-    display: inline-block;
-    margin-top: 6px;
-    padding: 2px 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--success);
-    border: 1px solid currentColor;
-    border-radius: 999px;
+.login-input::placeholder {
+    color: #8a7a70;
+    letter-spacing: 0.06em;
 }
 
-.room-status.is-closed {
-    color: var(--danger);
+.login-message {
+    min-height: 1.4em;
+    margin: 0;
+    color: #b00020;
 }
 
-.ticket-box {
+/* ---------- 主畫面：照設計稿，一頁不捲動 ---------- */
+
+/* 各區塊固定列號：「暫停點歌」提示隱藏時，後面的區塊才不會往前遞補 */
+.ktv-app {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: var(--space);
+    height: 100dvh;
+    min-height: 0;
+}
+
+.ktv-header {
+    grid-row: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: var(--space);
 }
 
-.ticket-label {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
+.ktv-notice {
+    grid-row: 2;
+    margin: 0;
+    padding: 2px 12px;
+    font-size: clamp(0.9rem, 3vh, 1.3rem);
+    text-align: center;
+    color: #fff;
+    background: var(--title);
+    border-radius: var(--radius);
 }
 
-.song-list {
-    margin: 12px 0;
+.ktv-body {
+    grid-row: 3;
+    min-height: 0;
+}
+
+.ktv-footer {
+    grid-row: 4;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(6px, 1.6vh, 12px);
+}
+
+.ktv-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space);
+    flex: 1 1 auto;
+    max-width: clamp(420px, 58vw, 1100px);
+}
+
+.ktv-tab {
+    min-width: 0;
+}
+
+/* 歌單：兩欄，每欄 --rows 列（由 JS 依螢幕高度設定），先排左欄再排右欄 */
+.ktv-list {
+    --rows: 10;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+    grid-auto-flow: column;
+    gap: var(--row-gap) clamp(4px, 1vh, 6px);
+    height: 100%;
+    margin: 0;
     padding: 0;
     list-style: none;
-    max-height: 55vh;
-    overflow-y: auto;
 }
 
-.song-item {
+.ktv-list[aria-busy='true'] {
+    opacity: 0.6;
+}
+
+.song-row {
     display: grid;
-    grid-template-columns: 1fr auto;
-    width: 100%;
-    padding: 10px 12px;
-    font: inherit;
-    color: inherit;
-    text-align: left;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    cursor: pointer;
+    grid-template-columns: clamp(2.2rem, 6.5vh, 4.6rem) minmax(0, 1fr) auto;
+    align-items: stretch;
+    min-height: 0;
+    background: linear-gradient(
+        180deg,
+        var(--row-blue-hi) 0%,
+        var(--row-blue-lo) 100%
+    );
 }
 
-.song-item:hover {
-    background: var(--bg);
+.song-row.is-yellow {
+    background: linear-gradient(
+        180deg,
+        var(--row-yellow-hi) 0%,
+        var(--row-yellow-lo) 100%
+    );
 }
 
-.song-item.is-selected {
-    border-color: var(--primary);
+.song-no {
+    display: grid;
+    place-items: center;
+    font-size: clamp(0.95rem, 3.4vh, 2.1rem);
+    color: var(--song-no);
+    border: clamp(2px, 0.5vh, 3px) solid var(--frame-line);
+}
+
+.song-info {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 8px clamp(10px, 2.6vh, 28px) clamp(6px, 1.8vh, 14px);
 }
 
 .song-title {
-    font-weight: 600;
+    overflow: hidden;
+    font-size: clamp(0.95rem, 3.6vh, 2.3rem);
+    line-height: 1.15;
+    color: var(--song);
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
-.song-meta {
-    grid-column: 1;
+/* 歌手：右下角小字（設計稿位置） */
+.song-artist {
+    position: absolute;
+    right: 8px;
+    bottom: 1px;
+    max-width: 60%;
+    overflow: hidden;
+    font-size: clamp(0.7rem, 2vh, 1.2rem);
+    line-height: 1.2;
+    color: var(--artist);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.song-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, clamp(48px, 10.5vh, 124px));
+}
+
+.green-btn {
+    min-width: 0;
+    padding: 0 4px;
+    font: inherit;
+    font-size: clamp(0.85rem, 3.1vh, 1.85rem);
+    color: var(--green-text);
+    background: linear-gradient(
+        180deg,
+        var(--green-hi) 0%,
+        var(--green-lo) 100%
+    );
+    border: 1px solid var(--green-edge);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+        filter 150ms ease-out,
+        transform 120ms ease-out;
+}
+
+.green-btn:hover {
+    filter: brightness(1.05);
+}
+
+.green-btn:active {
+    transform: translateY(1px);
+}
+
+.green-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.7) opacity(0.6);
+}
+
+/* 自己目前點的歌 */
+.green-btn[aria-pressed='true'] {
+    color: #fff;
+    background: linear-gradient(180deg, #ff8cc2 0%, var(--pink-lo) 100%);
+    border-color: var(--pink-shadow);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.song-row.is-mine .song-no {
+    color: #fff;
+    background: var(--pink);
+}
+
+.song-row.is-empty {
+    pointer-events: none;
+}
+
+.list-empty {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: grid;
+    place-items: center;
+    font-size: clamp(1rem, 3.6vh, 1.6rem);
+    background: var(--row-yellow-hi);
+    border-radius: var(--radius);
+}
+
+/* ---------- 底部 ---------- */
+
+.ktv-actions,
+.ktv-pager {
+    display: grid;
+    gap: var(--space);
+}
+
+.ktv-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ktv-action,
+.ktv-page-btn {
+    min-width: 0;
+    min-height: var(--footer-h);
+}
+
+/* 設計稿順序：第01/05頁｜上一頁｜下一頁 */
+.ktv-pager {
+    grid-template-columns: auto repeat(2, clamp(92px, 12vw, 230px));
+    align-items: center;
+}
+
+.ktv-page {
+    margin: 0;
+    padding-inline: clamp(2px, 1vh, 8px);
+    font-size: clamp(0.9rem, 3.4vh, 2rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--title);
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ---------- 已點歌曲 ---------- */
+
+.ktv-dialog {
+    width: min(560px, calc(100vw - 24px));
+    max-height: calc(100dvh - 16px);
+    padding: 0;
+    overflow: auto;
+    color: var(--song);
+    background: var(--row-blue-hi);
+    border: 3px solid var(--frame-edge);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(10, 40, 70, 0.35);
+}
+
+.ktv-dialog::backdrop {
+    background: rgba(10, 40, 70, 0.45);
+}
+
+.dialog-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px 6px 18px;
+    color: #fff;
+    background: linear-gradient(180deg, var(--pink-hi), var(--pink-lo));
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 400;
+    text-shadow: 0 1px 1px rgba(120, 0, 50, 0.45);
+}
+
+.dialog-close {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.dialog-section {
+    padding: 10px 18px 2px;
+}
+
+.dialog-subtitle {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--artist);
+}
+
+.my-vote {
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    background: linear-gradient(
+        180deg,
+        var(--row-yellow-hi),
+        var(--row-yellow-lo)
+    );
+    border-radius: var(--radius);
+}
+
+.dialog-hint {
+    margin: 4px 0 0;
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: #1e4a5f;
 }
 
-.song-votes {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+.rank-list {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.vote-bar {
+.rank-item {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 4px 12px 4px 6px;
+    background: linear-gradient(180deg, #ffffff, #d6eff9);
+    border-radius: var(--radius);
+}
+
+.rank-item:nth-child(even) {
+    background: linear-gradient(180deg, var(--row-yellow-hi), #fff0a8);
+}
+
+.rank-item.is-mine {
+    box-shadow: inset 0 0 0 2px var(--pink);
+}
+
+.rank-no {
+    font-size: 1.1rem;
+    text-align: center;
+    color: var(--song-no);
+}
+
+.rank-item:nth-child(-n + 3) .rank-no {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    color: #fff;
+    background: var(--pink);
+    border-radius: 50%;
+}
+
+.rank-title {
+    overflow: hidden;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.rank-votes {
+    font-variant-numeric: tabular-nums;
+    color: var(--artist);
+}
+
+.rank-list .empty {
+    padding: 12px;
+    text-align: center;
+    list-style: none;
+}
+
+.dialog-foot {
+    position: sticky;
+    bottom: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    margin-top: 10px;
+    padding: 6px 18px;
+    background: #cdebf7;
+    border-top: 1px solid var(--frame-edge);
 }
 
-.selected-song {
-    min-width: 0;
-    font-weight: 600;
-    overflow-wrap: anywhere;
+.ticket-label {
+    font-variant-numeric: tabular-nums;
+    color: #1e4a5f;
 }
 
-.voted-song {
+.dialog-logout {
+    min-height: 40px;
+    padding: 4px 16px;
+    font: inherit;
+    color: var(--title);
+    background: #fff;
+    border: 1px solid var(--title);
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+/* ---------- 提示訊息：底部按鈕上方，不蓋住歌單中間 ---------- */
+
+.ktv-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(
+        var(--footer-h) + 3 * var(--space) + env(safe-area-inset-bottom)
+    );
+    z-index: 10;
+    max-width: calc(100vw - 32px);
+    padding: 8px 18px;
+    font-size: clamp(0.95rem, 3vh, 1.2rem);
+    color: #fff;
+    background: rgba(20, 30, 60, 0.92);
+    border-radius: 999px;
+    opacity: 0;
+    transform: translate(-50%, 8px);
+    pointer-events: none;
+    transition:
+        opacity 200ms ease-out,
+        transform 200ms ease-out;
+}
+
+.ktv-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ---------- 直向：請使用者轉成橫向 ---------- */
+
+.rotate-hint {
+    display: none;
+}
+
+@media (orientation: portrait) {
+    .rotate-hint {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 20px;
+        padding: 24px;
+        text-align: center;
+        background: var(--frame);
+        border: 3px solid var(--frame-edge);
+        box-shadow: inset 0 0 0 2px var(--frame-line);
+    }
+
+    /* 直向時底下的畫面不給操作、也不給螢幕閱讀器讀 */
+    .ktv-frame,
+    .ktv-toast,
+    .ktv-dialog,
+    .ktv-dialog::backdrop {
+        visibility: hidden;
+    }
+}
+
+.rotate-hint__icon {
+    width: 96px;
+    height: 96px;
+    color: var(--pink);
+    animation: rotate-phone 2.4s ease-in-out infinite;
+}
+
+.rotate-hint__title {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--primary);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--title);
 }
 
-.voted-box {
-    display: grid;
-    gap: 2px;
-    margin-bottom: 20px;
-    padding: 12px 14px;
-    border: 1px solid var(--primary);
-    border-radius: 8px;
-}
-
-.voted-hint {
+.rotate-hint__text {
     margin: 0;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+    font-size: 1.05rem;
+    color: #1e4a5f;
 }
 
-.song-item.is-voted .song-title {
-    color: var(--primary);
+@keyframes rotate-phone {
+    0%,
+    20% {
+        transform: rotate(0deg);
+    }
+    50%,
+    80% {
+        transform: rotate(-90deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0ms !important;
+        animation: none !important;
+    }
 }

@@ -4,18 +4,12 @@ const API_BASE = '/api/v1';
  * 呼叫後端 API；失敗時丟出含後端 message / status 的 Error
  * 同網域請求，fetch 預設會帶上票券登入的 cookie
  * @param {string} path
- * @param {{ method?: string, body?: object, adminToken?: string }} [options]
+ * @param {{ method?: string, body?: object }} [options]
  */
-export async function apiRequest(
-    path,
-    { method = 'GET', body, adminToken } = {}
-) {
+export async function apiRequest(path, { method = 'GET', body } = {}) {
     const headers = {};
     if (body !== undefined) {
         headers['Content-Type'] = 'application/json';
-    }
-    if (adminToken) {
-        headers['x-admin-token'] = adminToken;
     }
 
     const res = await fetch(`${API_BASE}${path}`, {
