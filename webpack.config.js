@@ -5,7 +5,10 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 // 新增頁面：在這裡加一筆，並建立 app/<entry>.js 與 app/templates/<filename>
-const PAGES = [{ entry: 'index', filename: 'index.html' }];
+const PAGES = [
+    { entry: 'index', filename: 'index.html' },
+    { entry: 'admin', filename: 'admin.html' },
+];
 
 module.exports = {
     mode: 'production',

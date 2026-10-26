@@ -41,6 +41,10 @@ app.use('/api/v1', apiRoute);
 app.use('/api', (req, res) => {
     res.status(404).json({ status: 'error', message: 'Not Found' });
 });
+// 後台頁面
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
     res.sendFile(path.join(__dirname, 'static', 'robots.txt'));

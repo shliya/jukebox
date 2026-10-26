@@ -1,10 +1,12 @@
 const { QueryTypes } = require('sequelize');
 const { Song } = require('../model');
 const sequelize = require('../config/database');
+const { ENUM_VOTE_CATEGORY } = require('../lib/enum');
 
 /**
  * 歌單 + 票數，依票數排序
  *   票數高 → 低；同票數時先達到的（最早一票較早）排前面；再依歌名
+ *   只算一般點歌；合唱是特殊票上台合唱的點歌，不列入排行
  * @param {number|string} roomId
  * @param {{ keyword?: string, onlyVoted?: boolean, limit?: number }} [options]
  *   onlyVoted=true 時只列有人點的歌（排行榜）
@@ -27,6 +29,7 @@ async function getSongRankingByRoomId(
                    COUNT(*)::int   AS vote_count,
                    MIN(updated_at) AS first_voted_at
             FROM song_votes
+            WHERE category = :generalCategory
             GROUP BY song_id
         ) c ON c.song_id = s.id
         WHERE s.room_id = :roomId
@@ -46,6 +49,7 @@ async function getSongRankingByRoomId(
                 keyword,
                 like: `%${keyword.replace(/[\\%_]/g, '\\$&')}%`,
                 limit,
+                generalCategory: ENUM_VOTE_CATEGORY.GENERAL,
             },
             type: QueryTypes.SELECT,
         }

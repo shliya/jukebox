@@ -19,6 +19,21 @@ const NOT_LOGGED_IN = {
     message: '請先輸入票券碼登入',
     status: 401,
 };
+const DUET_NOT_ALLOWED = {
+    code: '3004',
+    message: '此票券不能點合唱歌曲',
+    status: 403,
+};
+const ADMIN_LOGIN_FAILED = {
+    code: '4001',
+    message: '帳號或密碼錯誤',
+    status: 401,
+};
+const ADMIN_NOT_LOGGED_IN = {
+    code: '4002',
+    message: '請先登入管理員帳號',
+    status: 401,
+};
 const INVALID_PARAMS = { code: '9001', message: '參數錯誤', status: 400 };
 
 module.exports = {
@@ -29,5 +44,8 @@ module.exports = {
     TICKET_INVALID,
     TICKET_DISABLED,
     NOT_LOGGED_IN,
+    DUET_NOT_ALLOWED,
+    ADMIN_LOGIN_FAILED,
+    ADMIN_NOT_LOGGED_IN,
     INVALID_PARAMS,
 };

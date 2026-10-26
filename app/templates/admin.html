@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#9ed6ec" />
+        <meta name="robots" content="noindex" />
+        <title>點歌機後台</title>
+    </head>
+    <body>
+        <!-- 登入 -->
+        <main id="loginView" class="admin-login" hidden>
+            <form id="loginForm" class="admin-card login-form" novalidate>
+                <h1 class="admin-title">點歌機後台</h1>
+                <label class="field">
+                    <span class="field-label">帳號</span>
+                    <input
+                        id="username"
+                        class="field-input"
+                        name="username"
+                        autocomplete="username"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        required
+                    />
+                </label>
+                <label class="field">
+                    <span class="field-label">密碼</span>
+                    <input
+                        id="password"
+                        class="field-input"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                    />
+                </label>
+                <p
+                    id="loginMessage"
+                    class="form-message"
+                    aria-live="polite"
+                ></p>
+                <button id="loginBtn" class="btn btn--primary" type="submit">
+                    登入
+                </button>
+            </form>
+        </main>
+
+        <!-- 後台 -->
+        <div id="mainView" class="admin-app" hidden>
+            <header class="admin-header">
+                <h1 class="admin-title">點歌機後台</h1>
+                <div class="admin-header-side">
+                    <span id="adminName" class="admin-name"></span>
+                    <button id="logoutBtn" class="btn btn--ghost" type="button">
+                        登出
+                    </button>
+                </div>
+            </header>
+            <main>
+                <ul id="roomList" class="room-list" aria-live="polite"></ul>
+                <p class="admin-note">每 5 秒自動更新投票進度</p>
+            </main>
+        </div>
+
+        <!-- 確認重置 -->
+        <dialog id="confirmDialog" class="admin-card confirm-dialog">
+            <form method="dialog">
+                <h2 class="confirm-title">重置選歌</h2>
+                <p id="confirmText" class="confirm-text"></p>
+                <div class="confirm-actions">
+                    <button class="btn btn--ghost" value="cancel">取消</button>
+                    <button class="btn btn--danger" value="confirm">
+                        確定清空
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+        <div
+            id="toast"
+            class="admin-toast"
+            role="status"
+            aria-live="polite"
+        ></div>
+    </body>
+</html>

@@ -284,8 +284,42 @@ body {
 }
 
 .ktv-body {
+    position: relative;
     grid-row: 3;
     min-height: 0;
+}
+
+/* 停止點歌：蓋住整個歌單，底下的按鈕點不到 */
+.closed-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    background: rgb(158 214 236 / 0.85);
+    border-radius: var(--radius);
+}
+
+.closed-board {
+    padding: clamp(12px, 4vh, 32px) clamp(24px, 6vw, 64px);
+    text-align: center;
+    background: linear-gradient(180deg, var(--row-yellow-hi), #fff3b8);
+    border: 3px solid var(--frame-line);
+    border-radius: 12px;
+    box-shadow: 0 4px 0 var(--frame-edge);
+}
+
+.closed-title {
+    margin: 0;
+    font-size: clamp(1.6rem, 9vh, 4rem);
+    letter-spacing: 0.12em;
+    color: var(--title);
+}
+
+.closed-text {
+    margin: 0.4em 0 0;
+    font-size: clamp(0.9rem, 3vh, 1.3rem);
+    color: var(--artist);
 }
 
 .ktv-footer {
@@ -548,6 +582,7 @@ body {
 
 .my-vote {
     margin: 0;
+    white-space: pre-line; /* 特殊票分兩行：一般 / 合唱 */
     padding: 8px 12px;
     font-size: 1.2rem;
     background: linear-gradient(
@@ -556,6 +591,18 @@ body {
         var(--row-yellow-lo)
     );
     border-radius: var(--radius);
+}
+
+.dialog-subtitle-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vote-progress {
+    font-variant-numeric: tabular-nums;
+    color: var(--title);
 }
 
 .dialog-hint {
@@ -640,17 +687,6 @@ body {
 .ticket-label {
     font-variant-numeric: tabular-nums;
     color: #1e4a5f;
-}
-
-.dialog-logout {
-    min-height: 40px;
-    padding: 4px 16px;
-    font: inherit;
-    color: var(--title);
-    background: #fff;
-    border: 1px solid var(--title);
-    border-radius: var(--radius);
-    cursor: pointer;
 }
 
 /* ---------- 提示訊息：底部按鈕上方，不蓋住歌單中間 ---------- */

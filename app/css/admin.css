@@ -1,0 +1,309 @@
+/* 後台：沿用點歌機配色，手機直放、電腦都能用 */
+
+:root {
+    color-scheme: light;
+
+    --frame: #9ed6ec;
+    --frame-edge: #5fb3d6;
+    --title: #a80f58;
+    --pink: #e62a80;
+    --pink-lo: #c8136a;
+    --text: #3b1a0a;
+    --muted: #1e4a5f;
+    --card: #fffbe3;
+    --open: #2f8f3a;
+    --closed: #b00020;
+    --focus: #102a6b;
+    --radius: 8px;
+
+    font-family:
+        'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Noto Sans TC',
+        system-ui, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    min-height: 100dvh;
+    color: var(--text);
+    background: var(--frame);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.admin-card {
+    background: var(--card);
+    border: 2px solid #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 var(--frame-edge);
+}
+
+.admin-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--title);
+}
+
+/* ---------- 按鈕 ---------- */
+
+.btn {
+    min-height: 44px;
+    padding: 6px 18px;
+    font: inherit;
+    font-size: 1rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.btn--primary {
+    color: #fff;
+    background: var(--pink);
+    border: 1px solid var(--pink-lo);
+}
+
+.btn--ghost {
+    color: var(--title);
+    background: #fff;
+    border: 1px solid var(--title);
+}
+
+.btn--danger {
+    color: #fff;
+    background: var(--closed);
+    border: 1px solid #7a0016;
+}
+
+.btn--open {
+    color: #fff;
+    background: var(--open);
+    border: 1px solid #1f6a28;
+}
+
+/* ---------- 登入 ---------- */
+
+.admin-login {
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: 16px;
+}
+
+.login-form {
+    display: grid;
+    gap: 14px;
+    width: min(360px, 100%);
+    padding: 24px 20px;
+}
+
+.field {
+    display: grid;
+    gap: 4px;
+}
+
+.field-label {
+    color: var(--muted);
+}
+
+.field-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 1rem; /* 16px 以上，iOS 才不會自動放大 */
+    color: var(--text);
+    background: #fff;
+    border: 2px solid var(--frame-edge);
+    border-radius: var(--radius);
+}
+
+.form-message {
+    min-height: 1.4em;
+    margin: 0;
+    color: var(--closed);
+}
+
+/* ---------- 主畫面 ---------- */
+
+.admin-app {
+    width: min(720px, 100%);
+    margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) 16px
+        max(16px, env(safe-area-inset-bottom));
+}
+
+.admin-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+}
+
+.admin-header-side {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-name {
+    color: var(--muted);
+}
+
+.room-list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.room-card {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+}
+
+.room-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.room-name {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--title);
+}
+
+.room-status {
+    padding: 2px 12px;
+    font-size: 0.95rem;
+    color: #fff;
+    border-radius: 999px;
+}
+
+.room-status.is-open {
+    background: var(--open);
+}
+
+.room-status.is-closed {
+    background: var(--closed);
+}
+
+.room-progress {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+}
+
+.room-progress strong {
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
+.room-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.room-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.admin-note {
+    margin: 16px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+}
+
+.list-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* ---------- 確認視窗 ---------- */
+
+.confirm-dialog {
+    width: min(400px, calc(100% - 32px));
+    padding: 20px;
+}
+
+.confirm-dialog::backdrop {
+    background: rgb(0 0 0 / 0.45);
+}
+
+.confirm-title {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    color: var(--title);
+}
+
+.confirm-text {
+    margin: 0 0 18px;
+    line-height: 1.6;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* ---------- 提示訊息 ---------- */
+
+.admin-toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    max-width: calc(100% - 32px);
+    padding: 10px 18px;
+    color: #fff;
+    background: rgb(30 30 30 / 0.9);
+    border-radius: var(--radius);
+    transform: translate(-50%, 16px);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.2s,
+        transform 0.2s;
+}
+
+.admin-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-toast {
+        transition: none;
+    }
+}

@@ -1,7 +1,12 @@
 const TicketStore = require('../store/ticket');
 const RoomStore = require('../store/room');
 const SongVoteStore = require('../store/song-vote');
-const { ENUM_TICKET_STATUS, ENUM_ROOM_STATUS } = require('../lib/enum');
+const SongService = require('./song');
+const {
+    ENUM_TICKET_STATUS,
+    ENUM_ROOM_STATUS,
+    ENUM_VOTE_CATEGORY,
+} = require('../lib/enum');
 const {
     normalizeTicketCode,
     isValidTicketCode,
@@ -39,31 +44,42 @@ async function getActiveTicket(ticketId) {
     return ticket;
 }
 
-/** 目前登入者資訊：活動、自己點的歌 */
+function formatVote(vote) {
+    if (!vote) return null;
+    return {
+        songId: Number(vote.songId),
+        title: vote.song && vote.song.title,
+        artist: vote.song && vote.song.artist,
+        votedAt: vote.updatedAt,
+    };
+}
+
+/** 目前登入者資訊：活動、能不能點合唱、自己點的歌（一般 / 合唱各一） */
 async function getMe(ticket) {
-    const [room, vote] = await Promise.all([
+    const [room, votes] = await Promise.all([
         RoomStore.getRoomById(ticket.roomId),
-        SongVoteStore.getVoteByTicketId(ticket.id),
+        SongVoteStore.getVotesByTicketId(ticket.id),
     ]);
     if (!room) {
         throw new AppError(ROOM_NOT_FOUND);
     }
     return {
         ticketCode: ticket.code,
+        canVoteDuet: SongService.canVoteDuet(ticket),
         room: {
             slug: room.slug,
             name: room.name,
             description: room.description,
             isOpen: room.status === ENUM_ROOM_STATUS.ACTIVE && room.allowVotes,
         },
-        vote: vote
-            ? {
-                  songId: Number(vote.songId),
-                  title: vote.song && vote.song.title,
-                  artist: vote.song && vote.song.artist,
-                  votedAt: vote.updatedAt,
-              }
-            : null,
+        votes: {
+            general: formatVote(
+                votes.find(v => v.category === ENUM_VOTE_CATEGORY.GENERAL)
+            ),
+            duet: formatVote(
+                votes.find(v => v.category === ENUM_VOTE_CATEGORY.DUET)
+            ),
+        },
     };
 }
 

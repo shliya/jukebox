@@ -3,6 +3,10 @@ import { apiRequest, songLabel, el } from './js/api.js';
 import { renderRanking } from './js/ranking-view.js';
 
 const TOAST_MS = 2500;
+// 每隔幾秒同步一次活動狀態與自己點的歌（後台停止點歌、重置選歌後畫面跟著更新）
+const SYNC_MS = 5000;
+// tags 含這個分類的歌算合唱，只有特殊票能點（跟後端 SONG_TAG_DUET 一致）
+const DUET_TAG = '合唱';
 
 // 每欄幾首依螢幕高度決定：大螢幕照設計稿 10 首；手機橫放約 6～7 首，列高才不會小於 36px
 const MAX_ROWS = 10;
@@ -11,7 +15,7 @@ const MIN_ROW_PX = 36;
 const ROW_GAP_PX = 3;
 
 const state = {
-    me: null, // { ticketCode, room, vote }
+    me: null, // { ticketCode, canVoteDuet, room, votes: { general, duet } }
     tag: '', // '' = 全部歌曲
     page: 1,
     totalPages: 1,
@@ -21,6 +25,8 @@ const state = {
     requestId: 0,
     // 每次登入 / 登出 +1；請求回來時 session 已變，代表中間登出過，結果直接丟掉
     session: 0,
+    // 每次點歌成功 +1；同步請求回來時已變，代表中間點過歌，舊資料直接丟掉
+    voteVersion: 0,
 };
 
 const pageSize = () => state.rows * 2;
@@ -37,6 +43,7 @@ const dom = {
     homeBtn: $('homeBtn'),
     tabs: [...document.querySelectorAll('.ktv-tab')],
     roomNotice: $('roomNotice'),
+    closedOverlay: $('closedOverlay'),
     listHeading: $('listHeading'),
     songList: $('songList'),
     cutBtn: $('cutBtn'),
@@ -49,9 +56,10 @@ const dom = {
     queueDialog: $('queueDialog'),
     closeDialogBtn: $('closeDialogBtn'),
     myVote: $('myVote'),
+    voteHint: $('voteHint'),
     rankingList: $('rankingList'),
+    voteProgress: $('voteProgress'),
     ticketLabel: $('ticketLabel'),
-    logoutBtn: $('logoutBtn'),
 
     toast: $('toast'),
 };
@@ -95,10 +103,12 @@ function showLogin(message = '') {
     dom.songList.replaceChildren();
     dom.myVote.textContent = '';
     dom.rankingList.replaceChildren();
+    dom.voteProgress.textContent = '';
     dom.ticketLabel.textContent = '';
     clearTimeout(toastTimer);
     dom.toast.classList.remove('is-visible');
     if (dom.queueDialog.open) dom.queueDialog.close();
+    stopSync();
     dom.mainView.hidden = true;
     dom.loginView.hidden = false;
     dom.loginMessage.textContent = message;
@@ -110,11 +120,64 @@ function showMain(me) {
     state.me = me;
     dom.loginView.hidden = true;
     dom.mainView.hidden = false;
-    dom.roomNotice.hidden = me.room.isOpen;
-    dom.ticketLabel.textContent = `票券 ${me.ticketCode}`;
+    applyRoomOpen(me.room.isOpen);
+    dom.ticketLabel.textContent = me.canVoteDuet
+        ? `票券 ${me.ticketCode}（可點合唱）`
+        : `票券 ${me.ticketCode}`;
+    dom.voteHint.textContent = me.canVoteDuet
+        ? '一般、合唱各點一首，合唱曲由你上台跟歌手一起唱；想換歌直接在歌單按「點歌」'
+        : '一張票只算一首，想換歌直接在歌單按「點歌」';
     applyRows(measureRows());
     loadSongs();
+    startSync();
 }
+
+/* ---------- 停止點歌：擋板蓋住歌單 ---------- */
+
+function applyRoomOpen(isOpen) {
+    dom.roomNotice.hidden = isOpen;
+    dom.closedOverlay.hidden = isOpen;
+}
+
+/* ---------- 定時同步：活動開關、自己點的歌 ---------- */
+
+let syncTimer = null;
+
+function startSync() {
+    stopSync();
+    syncTimer = setInterval(syncMe, SYNC_MS);
+}
+
+function stopSync() {
+    clearInterval(syncTimer);
+    syncTimer = null;
+}
+
+async function syncMe() {
+    // 切到背景時不打，回到前景下一輪就會更新
+    if (!state.me || document.hidden) return;
+    const session = state.session;
+    const voteVersion = state.voteVersion;
+    try {
+        const me = await apiRequest('/auth/me');
+        if (session !== state.session || voteVersion !== state.voteVersion) {
+            return;
+        }
+        const before = `${state.me.room.isOpen}|${votedSongIds()}`;
+        state.me = me;
+        applyRoomOpen(me.room.isOpen);
+        if (before !== `${me.room.isOpen}|${votedSongIds()}`) renderSongs();
+    } catch (error) {
+        // 票券停用 / 過期才回登入頁；網路暫時失敗等下一輪
+        if (session === state.session && error.status === 401) {
+            handleApiError(error);
+        }
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncMe();
+});
 
 /* ---------- 依螢幕高度決定每欄幾首 ---------- */
 
@@ -173,19 +236,20 @@ dom.loginForm.addEventListener('submit', async event => {
     }
 });
 
-dom.logoutBtn.addEventListener('click', async () => {
-    await apiRequest('/auth/logout', { method: 'POST' }).catch(() => {});
-    showLogin();
-});
-
 /* ---------- 歌單 ---------- */
 
-const votedSongId = () =>
-    state.me && state.me.vote ? state.me.vote.songId : null;
+const isDuetSong = song => (song.tags || []).includes(DUET_TAG);
+
+/** 自己點的歌（一般、合唱） */
+const votedSongIds = () => {
+    if (!state.me) return [];
+    const { general, duet } = state.me.votes;
+    return [general, duet].filter(Boolean).map(vote => vote.songId);
+};
 
 function songRow(song, index) {
     const number = (state.page - 1) * pageSize() + index + 1;
-    const isMine = song.id === votedSongId();
+    const isMine = votedSongIds().includes(song.id);
     const classes = ['song-row'];
     if (index % 2 === 1) classes.push('is-yellow');
     if (isMine) classes.push('is-mine');
@@ -309,8 +373,13 @@ dom.nextBtn.addEventListener('click', () =>
 /* ---------- 點歌（一張票一首，可改選） ---------- */
 
 async function voteSong(song) {
-    if (song.id === votedSongId()) {
+    if (votedSongIds().includes(song.id)) {
         toast(`已經點了「${song.title}」`);
+        return;
+    }
+    // 一般票看得到合唱歌單但不能點；後端也會擋
+    if (isDuetSong(song) && !state.me.canVoteDuet) {
+        toast('此票券不能點合唱歌曲');
         return;
     }
     const session = state.session;
@@ -320,19 +389,35 @@ async function voteSong(song) {
             body: { songId: song.id },
         });
         if (session !== state.session) return;
-        state.me.vote = vote;
+        state.voteVersion++;
+        state.me.votes[vote.isDuet ? 'duet' : 'general'] = vote;
         renderSongs();
-        toast(
-            vote.previousSongId
-                ? `已改點「${vote.title}」`
-                : `已點「${vote.title}」，之後還可以改選`
-        );
+        if (vote.isDuet) {
+            toast(
+                vote.previousSongId
+                    ? `合唱曲已改成「${vote.title}」`
+                    : `已點合唱「${vote.title}」，到時候上台跟歌手一起唱！`
+            );
+        } else {
+            toast(
+                vote.previousSongId
+                    ? `已改點「${vote.title}」`
+                    : `已點「${vote.title}」，之後還可以改選`
+            );
+        }
     } catch (error) {
         if (session === state.session) handleApiError(error);
     }
 }
 
 /* ---------- 已點歌曲 ---------- */
+
+function myVoteText({ canVoteDuet, votes }) {
+    const label = vote => (vote ? songLabel(vote) : '還沒有點歌');
+    if (!canVoteDuet) return label(votes.general);
+    return `一般：${label(votes.general)}
+上台合唱：${label(votes.duet)}`;
+}
 
 async function openQueue() {
     const session = state.session;
@@ -343,8 +428,10 @@ async function openQueue() {
         ]);
         if (session !== state.session) return;
         state.me = me;
-        dom.myVote.textContent = me.vote ? songLabel(me.vote) : '還沒有點歌';
-        renderRanking(dom.rankingList, ranking, votedSongId());
+        applyRoomOpen(me.room.isOpen);
+        dom.myVote.textContent = myVoteText(me);
+        renderRanking(dom.rankingList, ranking.items, votedSongIds());
+        dom.voteProgress.textContent = `已投票 ${ranking.votedCount}/${ranking.ticketCount}`;
         dom.queueDialog.showModal();
     } catch (error) {
         if (session === state.session) handleApiError(error);
@@ -364,10 +451,10 @@ dom.queueDialog.addEventListener('close', () => {
     dom.queueBtn.focus();
 });
 
-/* ---------- 尚未開放的功能 ---------- */
+/* ---------- 切歌（尚未開放）、服務鈴 ---------- */
 
 dom.cutBtn.addEventListener('click', () => toast('「切歌」功能尚未開放'));
-dom.bellBtn.addEventListener('click', () => toast('「服務鈴」功能尚未開放'));
+dom.bellBtn.addEventListener('click', () => toast('服務生忙碌中，請稍等。'));
 
 /* ---------- 啟動：已登入就直接進伴唱機 ---------- */
 

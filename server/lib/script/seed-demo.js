@@ -1,5 +1,6 @@
 /**
- * 本機測試資料：活動 demo + 示範歌單 + 5 張測試票（DEMO-0001 ~ DEMO-0005）
+ * 本機測試資料：活動 demo + 示範歌單 + 5 張一般測試票（DEMO-0001 ~ DEMO-0005）
+ *   + 1 張特殊測試票 DEMO-DUET（一般、合唱各可點一首）
  * 重複執行不會重複建立；同名歌曲會更新歌手與分類
  *   npm run seed
  */
@@ -14,6 +15,7 @@ if (process.env.NODE_ENV === 'production') {
 const sequelize = require('../../config/database');
 const { Room, Song } = require('../../model');
 const TicketStore = require('../../store/ticket');
+const { ENUM_TICKET_TYPE } = require('../enum');
 
 const DEMO_SLUG = 'demo';
 
@@ -58,6 +60,7 @@ const DEMO_TICKETS = [
     'DEMO-0004',
     'DEMO-0005',
 ];
+const DEMO_SPECIAL_TICKETS = ['DEMO-DUET'];
 
 async function main() {
     try {
@@ -90,6 +93,15 @@ async function main() {
         );
         console.log(
             `[seed] 測試票券：${DEMO_TICKETS.join(', ')}（新增 ${inserted.length} 張）`
+        );
+
+        const insertedSpecial = await TicketStore.bulkInsertTicketCodes(
+            room.id,
+            DEMO_SPECIAL_TICKETS,
+            { type: ENUM_TICKET_TYPE.SPECIAL }
+        );
+        console.log(
+            `[seed] 特殊測試票：${DEMO_SPECIAL_TICKETS.join(', ')}（新增 ${insertedSpecial.length} 張）`
         );
     } catch (error) {
         console.error('[seed] 失敗（是否已先執行 npm run migrate？）:', error);

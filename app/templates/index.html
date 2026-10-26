@@ -133,6 +133,13 @@
                     aria-labelledby="listHeading"
                     aria-busy="true"
                 ></ol>
+                <!-- 後台停止點歌時蓋住歌單 -->
+                <div id="closedOverlay" class="closed-overlay" hidden>
+                    <div class="closed-board" role="status">
+                        <p class="closed-title">暫停點歌</p>
+                        <p class="closed-text">請稍候，開放後就能繼續點歌</p>
+                    </div>
+                </div>
             </main>
 
             <footer class="ktv-footer">
@@ -219,19 +226,19 @@
             <section class="dialog-section" aria-labelledby="myVoteTitle">
                 <h3 id="myVoteTitle" class="dialog-subtitle">你點的歌</h3>
                 <p id="myVote" class="my-vote"></p>
-                <p class="dialog-hint">
-                    一張票只算一首，想換歌直接在歌單按「點歌」
-                </p>
+                <p id="voteHint" class="dialog-hint"></p>
             </section>
             <section class="dialog-section" aria-labelledby="rankTitle">
-                <h3 id="rankTitle" class="dialog-subtitle">點歌排行</h3>
+                <div class="dialog-subtitle-row">
+                    <h3 id="rankTitle" class="dialog-subtitle">
+                        點歌排行（不含合唱）
+                    </h3>
+                    <span id="voteProgress" class="vote-progress"></span>
+                </div>
                 <ol id="rankingList" class="rank-list"></ol>
             </section>
             <div class="dialog-foot">
                 <span id="ticketLabel" class="ticket-label"></span>
-                <button id="logoutBtn" class="dialog-logout" type="button">
-                    登出
-                </button>
             </div>
         </dialog>
 

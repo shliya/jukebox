@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../config/database');
-const { ENUM_TICKET_STATUS } = require('../../lib/enum');
+const { ENUM_TICKET_STATUS, ENUM_TICKET_TYPE } = require('../../lib/enum');
 
 const Ticket = sequelize.define(
     'Ticket',
@@ -29,6 +29,17 @@ const Ticket = sequelize.define(
                 isIn: {
                     args: [Object.values(ENUM_TICKET_STATUS)],
                     msg: '狀態錯誤',
+                },
+            },
+        },
+        type: {
+            type: DataTypes.SMALLINT,
+            allowNull: false,
+            defaultValue: ENUM_TICKET_TYPE.NORMAL,
+            validate: {
+                isIn: {
+                    args: [Object.values(ENUM_TICKET_TYPE)],
+                    msg: '票券類型錯誤',
                 },
             },
         },

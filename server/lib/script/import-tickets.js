@@ -10,13 +10,17 @@
  * 活動不存在時加 --name 會自動建立：
  *   npm run tickets:import -- --room live-1015 --name "10/15 演唱會" --generate 300 --out ./t.csv
  *
- * 已存在的 code 一律略過（不會覆蓋、不會重複）。
+ * 特殊票（一般、合唱各可點一首）加 --type special，不加就是一般票：
+ *   npm run tickets:import -- --room demo --generate 20 --type special --out ./t-special.csv
+ *
+ * 已存在的 code 一律略過（不會覆蓋、不會重複，也不會改到既有票的類型）。
  */
 require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
 const sequelize = require('../../config/database');
+const { ENUM_TICKET_TYPE } = require('../enum');
 const RoomStore = require('../../store/room');
 const TicketStore = require('../../store/ticket');
 const {
@@ -26,6 +30,11 @@ const {
 } = require('../ticket-code');
 
 const MAX_GENERATE = 100000;
+
+const TICKET_TYPES = {
+    normal: ENUM_TICKET_TYPE.NORMAL,
+    special: ENUM_TICKET_TYPE.SPECIAL,
+};
 
 function parseArgs(argv) {
     const args = {};
@@ -85,10 +94,15 @@ async function main() {
     const args = parseArgs(process.argv.slice(2));
     if (!args.room || (!args.file && !args.generate)) {
         console.log(
-            '用法：--room <slug> (--file <path> | --generate <數量> --out <path>) [--name <活動名稱>]'
+            '用法：--room <slug> (--file <path> | --generate <數量> --out <path>) [--type normal|special] [--name <活動名稱>]'
         );
         process.exitCode = 1;
         return;
+    }
+    const typeName = args.type || 'normal';
+    const type = TICKET_TYPES[typeName];
+    if (!type) {
+        throw new Error('--type 只能是 normal（一般票）或 special（特殊票）');
     }
 
     let codes;
@@ -123,9 +137,11 @@ async function main() {
     }
 
     const room = await getOrCreateRoom(args.room, args.name);
-    const inserted = await TicketStore.bulkInsertTicketCodes(room.id, codes);
+    const inserted = await TicketStore.bulkInsertTicketCodes(room.id, codes, {
+        type,
+    });
     console.log(
-        `[tickets] 活動 ${room.slug}：新增 ${inserted.length} 筆，略過已存在 ${codes.length - inserted.length} 筆`
+        `[tickets] 活動 ${room.slug}（${typeName}）：新增 ${inserted.length} 筆，略過已存在 ${codes.length - inserted.length} 筆`
     );
 
     if (outPath) {
