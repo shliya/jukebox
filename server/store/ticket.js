@@ -1,11 +1,7 @@
 const { QueryTypes } = require('sequelize');
 const { Ticket } = require('../model');
 const sequelize = require('../config/database');
-const {
-    ENUM_TICKET_STATUS,
-    ENUM_TICKET_TYPE,
-    ENUM_VOTE_CATEGORY,
-} = require('../lib/enum');
+const { ENUM_TICKET_STATUS, ENUM_TICKET_TYPE } = require('../lib/enum');
 
 const BULK_CHUNK_SIZE = 1000;
 
@@ -18,26 +14,26 @@ async function getTicketById(id) {
 }
 
 /**
- * 投票進度：可用票券總數、其中已點一般歌曲的張數
- * 合唱不算（排行榜也只算一般點歌）；停用的票不算進分母
+ * 投票進度：可用票券總數、其中已點歌的張數
+ * 停用的票不算進分母
  * @returns {Promise<{ ticketCount: number, votedCount: number }>}
  */
 async function getVoteProgressByRoomId(roomId) {
     const [row] = await sequelize.query(
         `
-        SELECT COUNT(*)::int    AS ticket_count,
-               COUNT(v.id)::int AS voted_count
+        SELECT COUNT(*)::int AS ticket_count,
+               COUNT(*) FILTER (
+                   WHERE EXISTS (
+                       SELECT 1 FROM song_votes v WHERE v.ticket_id = t.id
+                   )
+               )::int AS voted_count
         FROM tickets t
-        LEFT JOIN song_votes v
-               ON v.ticket_id = t.id
-              AND v.category = :generalCategory
         WHERE t.room_id = :roomId
           AND t.status = :activeStatus
         `,
         {
             replacements: {
                 roomId,
-                generalCategory: ENUM_VOTE_CATEGORY.GENERAL,
                 activeStatus: ENUM_TICKET_STATUS.ACTIVE,
             },
             type: QueryTypes.SELECT,

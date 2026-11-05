@@ -2,11 +2,7 @@ const TicketStore = require('../store/ticket');
 const RoomStore = require('../store/room');
 const SongVoteStore = require('../store/song-vote');
 const SongService = require('./song');
-const {
-    ENUM_TICKET_STATUS,
-    ENUM_ROOM_STATUS,
-    ENUM_VOTE_CATEGORY,
-} = require('../lib/enum');
+const { ENUM_TICKET_STATUS, ENUM_ROOM_STATUS } = require('../lib/enum');
 const {
     normalizeTicketCode,
     isValidTicketCode,
@@ -54,7 +50,7 @@ function formatVote(vote) {
     };
 }
 
-/** 目前登入者資訊：活動、能不能點合唱、自己點的歌（一般 / 合唱各一） */
+/** 目前登入者資訊：活動、能不能點合唱、自己點的歌（一張票一首） */
 async function getMe(ticket) {
     const [room, votes] = await Promise.all([
         RoomStore.getRoomById(ticket.roomId),
@@ -72,14 +68,7 @@ async function getMe(ticket) {
             description: room.description,
             isOpen: room.status === ENUM_ROOM_STATUS.ACTIVE && room.allowVotes,
         },
-        votes: {
-            general: formatVote(
-                votes.find(v => v.category === ENUM_VOTE_CATEGORY.GENERAL)
-            ),
-            duet: formatVote(
-                votes.find(v => v.category === ENUM_VOTE_CATEGORY.DUET)
-            ),
-        },
+        vote: formatVote(SongService.latestVote(votes)),
     };
 }
 

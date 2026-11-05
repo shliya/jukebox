@@ -20,7 +20,7 @@ router.get('/me', handleGetMeRequest);
 router.get('/rooms', handleGetRoomsRequest);
 // 開放 / 停止點歌 { allowVotes: boolean }
 router.put('/rooms/:roomId/allow-votes', handlePutAllowVotesRequest);
-// 重置選歌：清空一般點歌（合唱保留）
+// 重置選歌：一般、合唱點歌都清空
 router.delete('/rooms/:roomId/votes', handleDeleteVotesRequest);
 
 module.exports = router;

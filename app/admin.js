@@ -1,5 +1,5 @@
 import './css/admin.css';
-import { apiRequest, el } from './js/api.js';
+import { apiRequest, el, songLabel } from './js/api.js';
 
 const TOAST_MS = 2500;
 // 投票進度自動更新間隔
@@ -140,6 +140,22 @@ function roomCard(room) {
         }),
     ]);
 
+    const top = room.topSong;
+    const topSong = el(
+        'p',
+        { className: 'room-top' },
+        [
+            el('span', { className: 'room-top-label', text: '目前最高票' }),
+            top
+                ? el('strong', {
+                      className: 'room-top-title',
+                      text: songLabel(top),
+                  })
+                : el('span', { text: '還沒有人點歌' }),
+            top ? el('span', { text: `${top.voteCount} 票` }) : null,
+        ].filter(Boolean)
+    );
+
     return el('li', { className: 'admin-card room-card' }, [
         el('div', { className: 'room-head' }, [
             el('h2', { className: 'room-name', text: room.name }),
@@ -149,10 +165,11 @@ function roomCard(room) {
             }),
         ]),
         progress,
+        topSong,
         el('div', { className: 'room-actions' }, [toggleBtn, resetBtn]),
         el('p', {
             className: 'room-hint',
-            text: '停止點歌時，觀眾畫面會被擋住不能點歌；重置選歌只清一般點歌，合唱點歌保留',
+            text: '停止點歌時，觀眾畫面會被擋住不能點歌；重置選歌會清空一般和合唱點歌',
         }),
     ]);
 }
@@ -206,7 +223,7 @@ function toggleVotes(room) {
 
 /** 確認視窗：回傳使用者是否按了「確定清空」 */
 function confirmReset(room) {
-    dom.confirmText.textContent = `確定要清空「${room.name}」的一般點歌嗎？排行榜和投票進度會歸零，合唱點歌保留。這個動作無法復原。`;
+    dom.confirmText.textContent = `確定要清空「${room.name}」的所有點歌（一般、合唱）嗎？排行榜和投票進度會歸零。這個動作無法復原。`;
     dom.confirmDialog.returnValue = '';
     dom.confirmDialog.showModal();
     return new Promise(resolve => {

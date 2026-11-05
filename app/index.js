@@ -3,10 +3,16 @@ import { apiRequest, songLabel, el } from './js/api.js';
 import { renderRanking } from './js/ranking-view.js';
 
 const TOAST_MS = 2500;
+const BIG_TOAST_MS = 3500;
 // 每隔幾秒同步一次活動狀態與自己點的歌（後台停止點歌、重置選歌後畫面跟著更新）
 const SYNC_MS = 5000;
-// tags 含這個分類的歌算合唱，只有特殊票能點（跟後端 SONG_TAG_DUET 一致）
+// tags 含這個分類的歌算合唱，能不能點看 me.canVoteDuet（跟後端 SONG_TAG_DUET 一致）
 const DUET_TAG = '合唱';
+
+// 切歌、插播、服務鈴按下去的提示
+const CUT_TEXT = '切歌是壞文明不可以亂按QQ';
+const CUT_IN_TEXT = '擦玻璃～擦玻璃～擦擦擦擦擦玻璃～(諧音)';
+const BELL_TEXT = '請舉起右手請喊：服務生～！';
 
 // 每欄幾首依螢幕高度決定：大螢幕照設計稿 10 首；手機橫放約 6～7 首，列高才不會小於 36px
 const MAX_ROWS = 10;
@@ -15,7 +21,7 @@ const MIN_ROW_PX = 36;
 const ROW_GAP_PX = 3;
 
 const state = {
-    me: null, // { ticketCode, canVoteDuet, room, votes: { general, duet } }
+    me: null, // { ticketCode, canVoteDuet, room, vote }
     tag: '', // '' = 全部歌曲
     page: 1,
     totalPages: 1,
@@ -69,13 +75,15 @@ const pad2 = n => String(n).padStart(2, '0');
 /* ---------- 提示訊息 ---------- */
 
 let toastTimer = null;
-function toast(message) {
+/** big=true：放大到畫面中間（切歌、插播、服務鈴的搞笑提示） */
+function toast(message, { big = false } = {}) {
     dom.toast.textContent = message;
+    dom.toast.classList.toggle('is-big', big);
     dom.toast.classList.add('is-visible');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(
         () => dom.toast.classList.remove('is-visible'),
-        TOAST_MS
+        big ? BIG_TOAST_MS : TOAST_MS
     );
 }
 
@@ -121,11 +129,9 @@ function showMain(me) {
     dom.loginView.hidden = true;
     dom.mainView.hidden = false;
     applyRoomOpen(me.room.isOpen);
-    dom.ticketLabel.textContent = me.canVoteDuet
-        ? `票券 ${me.ticketCode}（可點合唱）`
-        : `票券 ${me.ticketCode}`;
+    dom.ticketLabel.textContent = `票券 ${me.ticketCode}`;
     dom.voteHint.textContent = me.canVoteDuet
-        ? '一般、合唱各點一首，合唱曲由你上台跟歌手一起唱；想換歌直接在歌單按「點歌」'
+        ? '一張票只算一首（一般或合唱擇一，合唱曲是碧碧跟牛牛一起唱）；想換歌直接在歌單按「點歌」'
         : '一張票只算一首，想換歌直接在歌單按「點歌」';
     applyRows(measureRows());
     loadSongs();
@@ -240,12 +246,9 @@ dom.loginForm.addEventListener('submit', async event => {
 
 const isDuetSong = song => (song.tags || []).includes(DUET_TAG);
 
-/** 自己點的歌（一般、合唱） */
-const votedSongIds = () => {
-    if (!state.me) return [];
-    const { general, duet } = state.me.votes;
-    return [general, duet].filter(Boolean).map(vote => vote.songId);
-};
+/** 自己點的歌（一張票一首） */
+const votedSongIds = () =>
+    state.me && state.me.vote ? [state.me.vote.songId] : [];
 
 function songRow(song, index) {
     const number = (state.page - 1) * pageSize() + index + 1;
@@ -271,7 +274,7 @@ function songRow(song, index) {
         text: '插播',
         attrs: { type: 'button', 'aria-label': `插播：${songLabel(song)}` },
     });
-    cutInBtn.addEventListener('click', () => toast('「插播」功能尚未開放'));
+    cutInBtn.addEventListener('click', () => toast(CUT_IN_TEXT, { big: true }));
 
     return el('li', { className: classes.join(' ') }, [
         el('span', { className: 'song-no', text: String(number) }),
@@ -390,21 +393,13 @@ async function voteSong(song) {
         });
         if (session !== state.session) return;
         state.voteVersion++;
-        state.me.votes[vote.isDuet ? 'duet' : 'general'] = vote;
+        state.me.vote = vote;
         renderSongs();
-        if (vote.isDuet) {
-            toast(
-                vote.previousSongId
-                    ? `合唱曲已改成「${vote.title}」`
-                    : `已點合唱「${vote.title}」，到時候上台跟歌手一起唱！`
-            );
-        } else {
-            toast(
-                vote.previousSongId
-                    ? `已改點「${vote.title}」`
-                    : `已點「${vote.title}」，之後還可以改選`
-            );
-        }
+        toast(
+            vote.previousSongId
+                ? `已改點「${vote.title}」`
+                : `已點「${vote.title}」，之後還可以改選`
+        );
     } catch (error) {
         if (session === state.session) handleApiError(error);
     }
@@ -412,11 +407,8 @@ async function voteSong(song) {
 
 /* ---------- 已點歌曲 ---------- */
 
-function myVoteText({ canVoteDuet, votes }) {
-    const label = vote => (vote ? songLabel(vote) : '還沒有點歌');
-    if (!canVoteDuet) return label(votes.general);
-    return `一般：${label(votes.general)}
-上台合唱：${label(votes.duet)}`;
+function myVoteText({ vote }) {
+    return vote ? songLabel(vote) : '還沒有點歌';
 }
 
 async function openQueue() {
@@ -451,10 +443,10 @@ dom.queueDialog.addEventListener('close', () => {
     dom.queueBtn.focus();
 });
 
-/* ---------- 切歌（尚未開放）、服務鈴 ---------- */
+/* ---------- 切歌、服務鈴（沒有實際功能，只跳提示） ---------- */
 
-dom.cutBtn.addEventListener('click', () => toast('「切歌」功能尚未開放'));
-dom.bellBtn.addEventListener('click', () => toast('服務生忙碌中，請稍等。'));
+dom.cutBtn.addEventListener('click', () => toast(CUT_TEXT, { big: true }));
+dom.bellBtn.addEventListener('click', () => toast(BELL_TEXT, { big: true }));
 
 /* ---------- 啟動：已登入就直接進伴唱機 ---------- */
 

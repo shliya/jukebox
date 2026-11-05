@@ -4,7 +4,7 @@ import { el, songLabel } from './api.js';
  * 渲染排行榜（資料已由後端依票數排序）
  * @param {HTMLElement} container
  * @param {Array<{ id:number, title:string, artist:string, voteCount:number }>} ranking
- * @param {number[]} [highlightSongIds] 自己點的歌（一般、合唱）
+ * @param {number[]} [highlightSongIds] 自己點的歌
  */
 export function renderRanking(container, ranking, highlightSongIds = []) {
     container.replaceChildren();

@@ -1,8 +1,8 @@
-const { QueryTypes } = require('sequelize');
+const { QueryTypes, Op } = require('sequelize');
 const { SongVote, Song } = require('../model');
 const sequelize = require('../config/database');
 
-/** 這張票的所有點歌（一般票最多 1 筆，特殊票最多 2 筆） */
+/** 這張票的所有點歌（一張票只點一首，正常只有 1 筆；舊規則留下的資料可能有 2 筆） */
 async function getVotesByTicketId(ticketId) {
     return SongVote.findAll({
         where: { ticketId },
@@ -10,10 +10,6 @@ async function getVotesByTicketId(ticketId) {
             { model: Song, as: 'song', attributes: ['id', 'title', 'artist'] },
         ],
     });
-}
-
-async function getVoteByTicketIdAndCategory(ticketId, category) {
-    return SongVote.findOne({ where: { ticketId, category } });
 }
 
 /**
@@ -38,29 +34,35 @@ async function upsertVote({ ticketId, songId, category }) {
     return row;
 }
 
+/** 刪掉這張票其他類別的點歌（一張票只留一首用） */
+async function deleteVotesByTicketIdExceptCategory(ticketId, category) {
+    return SongVote.destroy({
+        where: { ticketId, category: { [Op.ne]: category } },
+    });
+}
+
 /**
- * 清空某個活動、某個類別的點歌（後台重置選歌用）
+ * 清空某個活動的所有點歌（一般、合唱都清，後台重置選歌用）
  * song_votes 沒有 room_id，透過 tickets 對應活動
  * @returns {Promise<number>} 刪除筆數
  */
-async function deleteVotesByRoomIdAndCategory(roomId, category) {
+async function deleteVotesByRoomId(roomId) {
     const rows = await sequelize.query(
         `
         DELETE FROM song_votes v
         USING tickets t
         WHERE t.id = v.ticket_id
           AND t.room_id = :roomId
-          AND v.category = :category
         RETURNING v.id
         `,
-        { replacements: { roomId, category }, type: QueryTypes.SELECT }
+        { replacements: { roomId }, type: QueryTypes.SELECT }
     );
     return rows.length;
 }
 
 module.exports = {
     getVotesByTicketId,
-    getVoteByTicketIdAndCategory,
     upsertVote,
-    deleteVotesByRoomIdAndCategory,
+    deleteVotesByTicketIdExceptCategory,
+    deleteVotesByRoomId,
 };

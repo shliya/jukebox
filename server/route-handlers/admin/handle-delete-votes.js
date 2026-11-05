@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
         if (!Number.isInteger(roomId) || roomId <= 0) {
             throw new AppError(INVALID_PARAMS);
         }
-        const deleted = await AdminService.resetGeneralVotes(roomId);
+        const deleted = await AdminService.resetVotes(roomId);
         res.json({ status: 'ok', data: { deleted } });
     } catch (error) {
         sendError(res, error);

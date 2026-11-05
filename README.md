@@ -2,8 +2,8 @@
 
 票券碼登入的點歌系統：票券碼事先整批匯入資料庫，觀眾輸入票券碼登入後從歌單點歌，
 **一張票只算一首**（可以改選，改選是更新同一筆資料），排行榜依票數（`COUNT ... ORDER BY DESC`）排序。
-特殊票另外可以點一首合唱（tags 含 `合唱` 的歌），代表持票人上台跟歌手合唱這首：同一首可以多人點、可以改選，
-不列入排行榜；一般票看得到合唱歌單但不能點。
+一般歌曲和合唱（tags 含 `合唱` 的歌，也就是碧碧跟牛牛合唱的歌）擇一，同一首可以多人點、可以改選，
+一起算排行榜。目前合唱開放所有票券（`server/service/song.js` 的 `DUET_OPEN_TO_ALL`），改成 `false` 就只有特殊票能點。
 
 Node.js + Express + PostgreSQL（Sequelize / Umzug）+ webpack 前端，資料夾結構沿用 `ecpay-web`。
 觀眾點歌頁（只支援橫向）＋ 後台 `/admin`（停止 / 開放點歌、重置選歌、看投票進度）；歌單與票券都直接匯入資料庫。
@@ -77,7 +77,7 @@ migration 007 會建立預設帳號 `adminhamster`（密碼同帳號）；已存
 | 功能            | 說明                                                                      |
 | --------------- | ------------------------------------------------------------------------- |
 | 停止 / 開放點歌 | 切換 `rooms.allow_votes`；停止時觀眾畫面歌單會被擋板蓋住、點歌 API 回 403 |
-| 重置選歌        | 清空該活動的一般點歌（下一輪投票用），合唱點歌保留                        |
+| 重置選歌        | 清空該活動的所有點歌（一般、合唱都清，下一輪投票用）                      |
 | 投票進度        | 已投票 / 可用票券總數，每 5 秒自動更新                                    |
 
 觀眾頁每 5 秒同步一次 `/auth/me`，後台停止點歌或重置後，觀眾畫面幾秒內就會跟著變。
@@ -120,16 +120,16 @@ SELECT s.*, COALESCE(c.vote_count, 0) AS vote_count
 FROM songs s
 LEFT JOIN (
     SELECT song_id, COUNT(*) AS vote_count, MIN(updated_at) AS first_voted_at
-    FROM song_votes WHERE category = 1 GROUP BY song_id
+    FROM song_votes GROUP BY song_id
 ) c ON c.song_id = s.id
 WHERE s.room_id = :roomId AND s.is_active
 ORDER BY vote_count DESC, first_voted_at ASC NULLS LAST, s.title
 ```
 
-排行榜只算一般點歌（`category = 1`），合唱不列入。
+排行榜一般、合唱歌曲一起排；投票進度的「已投票」是已點歌的票券張數。
 同票數時，先拿到票的歌排前面（改選的票以改選時間計）。
 
-誰點了哪首合唱（現場安排上台用）：
+誰點了哪首合唱：
 
 ```sql
 SELECT s.title, t.code, v.updated_at
@@ -147,7 +147,7 @@ INSERT INTO song_votes (ticket_id, song_id, category) VALUES (:ticketId, :songId
 ON CONFLICT (ticket_id, category) DO UPDATE SET song_id = EXCLUDED.song_id, updated_at = NOW()
 ```
 
-`category` 由歌曲決定：tags 含 `合唱` 是合唱（2），其他是一般（1）；一般票點合唱會回 403。
+一張票只點一首，`category` 一律寫 1（一般），是不是合唱看歌曲 tags；改選時舊規則留下的 `category = 2` 那筆會一併刪掉。
 選到跟目前同一首時不寫入（不刷新 updated_at）。
 
 ## 登入機制
@@ -164,7 +164,7 @@ ON CONFLICT (ticket_id, category) DO UPDATE SET song_id = EXCLUDED.song_id, upda
 | ------ | -------------------------------- | ---- | --------------------------------------------------------------------------- |
 | GET    | `/health`                        | -    | 服務 + DB 狀態                                                              |
 | POST   | `/auth/login`                    | -    | 票券登入 `{ code }`                                                         |
-| GET    | `/auth/me`                       | 票券 | 票券、活動、`canVoteDuet`、自己點的歌 `votes: { general, duet }`            |
+| GET    | `/auth/me`                       | 票券 | 票券、活動、`canVoteDuet`、自己點的歌 `vote`                                |
 | GET    | `/songs?page=&pageSize=&tag=&q=` | 票券 | 歌單分頁（依編號排序，可依分類、關鍵字篩選）                                |
 | GET    | `/songs/ranking`                 | 票券 | 排行榜前 20（只列有票的）`items`，加上投票進度 `votedCount` / `ticketCount` |
 | PUT    | `/songs/vote`                    | 票券 | 點歌 / 改選 `{ songId }`，回傳 `isDuet`、`previousSongId`、`changed`        |
@@ -178,7 +178,7 @@ ON CONFLICT (ticket_id, category) DO UPDATE SET song_id = EXCLUDED.song_id, upda
 | GET    | `/admin/me`                        | 目前管理員                                                    |
 | GET    | `/admin/rooms`                     | 活動列表：`isOpen`、`allowVotes`、`ticketCount`、`votedCount` |
 | PUT    | `/admin/rooms/:roomId/allow-votes` | 開放 / 停止點歌 `{ allowVotes: boolean }`                     |
-| DELETE | `/admin/rooms/:roomId/votes`       | 重置選歌（清一般點歌），回傳 `deleted` 筆數                   |
+| DELETE | `/admin/rooms/:roomId/votes`       | 重置選歌（一般、合唱都清），回傳 `deleted` 筆數               |
 
 ## 目錄結構
 

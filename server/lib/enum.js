@@ -20,7 +20,7 @@ const ENUM_TICKET_TYPE = {
 
 const ENUM_VOTE_CATEGORY = {
     GENERAL: 1, // 一般歌曲
-    DUET: 2, // 合唱歌曲：只有特殊票能點，點了就是持票人上台跟歌手合唱，不列入排行榜
+    DUET: 2, // 舊規則的合唱點歌；現在一張票只點一首，一律寫成 GENERAL，是不是合唱看歌曲 tags
 };
 
 // tags 含這個分類的歌算合唱，要跟伴唱機上方「合唱」按鈕的 data-tag 一致

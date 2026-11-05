@@ -1,9 +1,10 @@
 const AdminStore = require('../store/admin');
 const RoomStore = require('../store/room');
+const SongStore = require('../store/song');
 const TicketStore = require('../store/ticket');
 const SongVoteStore = require('../store/song-vote');
 const { verifyPassword } = require('../lib/password');
-const { ENUM_ROOM_STATUS, ENUM_VOTE_CATEGORY } = require('../lib/enum');
+const { ENUM_ROOM_STATUS } = require('../lib/enum');
 const {
     AppError,
     ADMIN_LOGIN_FAILED,
@@ -45,18 +46,29 @@ async function getRoomOrThrow(roomId) {
     return room;
 }
 
-/** 後台首頁：每個活動的點歌開關與投票進度 */
+/** 後台首頁：每個活動的點歌開關、投票進度、目前最高票的歌（跟觀眾排行榜第 1 名一致） */
 async function getRoomList() {
     const rooms = await RoomStore.getAllRooms();
     return Promise.all(
-        rooms.map(async room => ({
-            id: Number(room.id),
-            slug: room.slug,
-            name: room.name,
-            isOpen: room.status === ENUM_ROOM_STATUS.ACTIVE && room.allowVotes,
-            allowVotes: room.allowVotes,
-            ...(await TicketStore.getVoteProgressByRoomId(room.id)),
-        }))
+        rooms.map(async room => {
+            const [progress, [topSong = null]] = await Promise.all([
+                TicketStore.getVoteProgressByRoomId(room.id),
+                SongStore.getSongRankingByRoomId(room.id, {
+                    onlyVoted: true,
+                    limit: 1,
+                }),
+            ]);
+            return {
+                id: Number(room.id),
+                slug: room.slug,
+                name: room.name,
+                isOpen:
+                    room.status === ENUM_ROOM_STATUS.ACTIVE && room.allowVotes,
+                allowVotes: room.allowVotes,
+                ...progress,
+                topSong,
+            };
+        })
     );
 }
 
@@ -67,15 +79,12 @@ async function setAllowVotes(roomId, allowVotes) {
 }
 
 /**
- * 重置選歌：清空一般點歌（排行榜、投票進度歸零），合唱點歌保留
+ * 重置選歌：一般、合唱點歌都清空（排行榜、投票進度歸零）
  * @returns {Promise<number>} 清掉的筆數
  */
-async function resetGeneralVotes(roomId) {
+async function resetVotes(roomId) {
     const room = await getRoomOrThrow(roomId);
-    return SongVoteStore.deleteVotesByRoomIdAndCategory(
-        room.id,
-        ENUM_VOTE_CATEGORY.GENERAL
-    );
+    return SongVoteStore.deleteVotesByRoomId(room.id);
 }
 
 module.exports = {
@@ -83,5 +92,5 @@ module.exports = {
     getAdmin,
     getRoomList,
     setAllowVotes,
-    resetGeneralVotes,
+    resetVotes,
 };

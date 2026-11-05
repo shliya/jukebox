@@ -582,7 +582,7 @@ body {
 
 .my-vote {
     margin: 0;
-    white-space: pre-line; /* 特殊票分兩行：一般 / 合唱 */
+    white-space: pre-line;
     padding: 8px 12px;
     font-size: 1.2rem;
     background: linear-gradient(
@@ -689,7 +689,7 @@ body {
     color: #1e4a5f;
 }
 
-/* ---------- 提示訊息：底部按鈕上方，不蓋住歌單中間 ---------- */
+/* ---------- 提示訊息：一般在底部按鈕上方，不蓋住歌單中間 ---------- */
 
 .ktv-toast {
     position: fixed;
@@ -715,6 +715,29 @@ body {
 .ktv-toast.is-visible {
     opacity: 1;
     transform: translate(-50%, 0);
+}
+
+/* 切歌、插播、服務鈴：放大到畫面中間，約佔畫面 1/3 */
+.ktv-toast.is-big {
+    top: 50%;
+    bottom: auto;
+    display: grid;
+    place-items: center;
+    width: min(60vw, calc(100vw - 32px));
+    min-height: 55vh;
+    padding: 24px 32px;
+    font-size: clamp(1.4rem, 7vh, 2.8rem);
+    line-height: 1.4;
+    text-align: center;
+    background: rgba(20, 30, 60, 0.94);
+    border: 3px solid var(--pink);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(10, 40, 70, 0.45);
+    transform: translate(-50%, -50%) scale(0.92);
+}
+
+.ktv-toast.is-big.is-visible {
+    transform: translate(-50%, -50%) scale(1);
 }
 
 /* ---------- 直向：請使用者轉成橫向 ---------- */

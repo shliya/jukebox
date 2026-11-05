@@ -21,9 +21,24 @@ function isDuetSong(song) {
     return Array.isArray(song.tags) && song.tags.includes(SONG_TAG_DUET);
 }
 
-/** 特殊票才能點合唱 */
+// 合唱開放所有票券；改回 false 就恢復成只有特殊票能點
+const DUET_OPEN_TO_ALL = true;
+
+/**
+ * 這張票目前點的歌：正常只有一筆；舊規則（一般、合唱各一筆）留下的資料取最後點的那筆
+ * @param {Array<{ updatedAt: Date }>} votes
+ */
+function latestVote(votes) {
+    return votes.reduce(
+        (latest, vote) =>
+            !latest || vote.updatedAt > latest.updatedAt ? vote : latest,
+        null
+    );
+}
+
+/** 能不能點合唱：目前開放所有票券 */
 function canVoteDuet(ticket) {
-    return ticket.type === ENUM_TICKET_TYPE.SPECIAL;
+    return DUET_OPEN_TO_ALL || ticket.type === ENUM_TICKET_TYPE.SPECIAL;
 }
 
 /**
@@ -67,8 +82,9 @@ async function getRankingByRoomId(roomId, { limit } = {}) {
 }
 
 /**
- * 觀眾：點歌 / 改選。一般、合唱各算一類，每類一張票只有一筆，改選是更新同一筆
- *   一般票只能點一般歌曲；特殊票一般、合唱各可點一首
+ * 觀眾：點歌 / 改選。一張票只能點一首（一般或合唱擇一），改選是更新同一筆
+ *   一律寫成 category=一般，靠 UNIQUE(ticket_id, category) 保證一張票只有一筆；
+ *   是不是合唱由歌曲的 tags 決定（isDuet 只用來回傳）
  * @returns {{ songId, title, artist, isDuet: boolean, previousSongId: number|null, changed: boolean }}
  */
 async function voteSong(ticket, songId) {
@@ -88,9 +104,7 @@ async function voteSong(ticket, songId) {
     if (isDuet && !canVoteDuet(ticket)) {
         throw new AppError(DUET_NOT_ALLOWED);
     }
-    const category = isDuet
-        ? ENUM_VOTE_CATEGORY.DUET
-        : ENUM_VOTE_CATEGORY.GENERAL;
+    const category = ENUM_VOTE_CATEGORY.GENERAL;
 
     const result = {
         songId: Number(song.id),
@@ -98,9 +112,8 @@ async function voteSong(ticket, songId) {
         artist: song.artist,
         isDuet,
     };
-    const existing = await SongVoteStore.getVoteByTicketIdAndCategory(
-        ticket.id,
-        category
+    const existing = latestVote(
+        await SongVoteStore.getVotesByTicketId(ticket.id)
     );
     const previousSongId = existing ? Number(existing.songId) : null;
 
@@ -113,11 +126,17 @@ async function voteSong(ticket, songId) {
         songId: song.id,
         category,
     });
+    // 舊規則留下的合唱類點歌（category=2）一併清掉，一張票只留這一首
+    await SongVoteStore.deleteVotesByTicketIdExceptCategory(
+        ticket.id,
+        category
+    );
     return { ...result, previousSongId, changed: true };
 }
 
 module.exports = {
     canVoteDuet,
+    latestVote,
     getSongList,
     getRankingByRoomId,
     voteSong,

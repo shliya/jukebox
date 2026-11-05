@@ -225,6 +225,24 @@ body {
     color: var(--text);
 }
 
+.room-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    margin: 0;
+    padding: 8px 12px;
+    color: var(--muted);
+    background: #fff;
+    border-radius: var(--radius);
+}
+
+.room-top-title {
+    font-size: 1.3rem;
+    color: var(--title);
+    overflow-wrap: anywhere;
+}
+
 .room-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
